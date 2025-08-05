@@ -4,6 +4,14 @@ import cv2
 import numpy as np
 import mediapipe as mp
 
+#TEMP
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_style   = mp.solutions.drawing_styles
+
+#TEMPO
+
+
 #the actual mediapipe pose estimator. initialise once – keep it global so the graph stays on the GPU / CPU
 _mp_pose = mp.solutions.pose.Pose(static_image_mode=False,
                                   model_complexity=1,
@@ -35,6 +43,18 @@ def extract_kps(frame_bgr: np.ndarray):
     res = _mp_pose.process(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
     if not res.pose_landmarks:
         return None
+    
+
+    # # ─── draw full 33-landmark skeleton on the original frame ───
+    # if res.pose_landmarks:
+    #     mp_drawing.draw_landmarks(
+    #         frame_bgr,                         # OpenCV BGR image
+    #         res.pose_landmarks,
+    #         mp.solutions.pose.POSE_CONNECTIONS,
+    #         landmark_drawing_spec = mp_style.get_default_pose_landmarks_style()
+    #     )
+    # else:
+    #     return None          # early exit → no pose
 
     xyz33 = np.array([[lm.x, lm.y] for lm in res.pose_landmarks.landmark],
                      dtype=np.float32) #(33,2)

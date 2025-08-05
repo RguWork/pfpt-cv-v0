@@ -1,2 +1,4 @@
 data/raw_data/*
 data/processed_data/*
+data/videos/*
+neutral_pose.jpg
