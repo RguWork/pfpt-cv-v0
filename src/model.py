@@ -4,11 +4,11 @@ class BiLSTMClassifier(nn.Module):
     """
     Bi-LSTM classifier for pelvic-floor-relevant exercise windows.
 
-    Input  : (B, T, 34)   - B batchsize of T time-steps of 17 joints x 2 (x,y) coords
+    Input  : (B, T, 30)   - B batchsize of T time-steps of 15 joints x 2 (x,y) coords
     Output : (B, 4)       - logits for 4 exercise classes
     """
     def __init__(self,
-        input_size: int = 34, # 17 x 2, 2 for 2 dimensions
+        input_size: int = 30, # 15 x 2, 2 for 2 dimensions
         hidden_size: int = 128,
         num_layers: int = 2,
         num_classes: int = 4,
