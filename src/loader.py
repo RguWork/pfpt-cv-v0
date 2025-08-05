@@ -1,6 +1,6 @@
 import numpy as np, pandas as pd, json
 from pathlib import Path
-from utils import to_coco17, centre_scale
+from utils import to_pfpt15, centre_scale
 
 RAW  = Path("../data/raw_data")
 OUT  = Path("../data/processed_data/windows");  OUT.mkdir(parents=True, exist_ok=True) #OUR.mkdir to make a directory
@@ -12,19 +12,19 @@ STEP = 32     #50 % overlap
 
 def window(arr, label, qual, vid, cam, base_idx):
     """
-    save an npz file that is normalized and turned to coco17
+    save an npz file that is normalized and turned to pfpt15
     with batched frames, every 64 frames with 32 frame overlap
     """
-    #normalize and turn to coco17 each window of exercise
+    #normalize and turn to pfpt15 each window of exercise
     #note: we save len 64 frames every 32 frame steps for a 32 frame overlap
     for start in range(0, len(arr) - WIN + 1, STEP):
         start_global = base_idx + start 
         #len(arr) - WIN  + 1 to avoid out of bounds
         clip = arr[start:start+WIN]              # (64,26,2), frame x joints x dimensions (x,y)
-        clip17 = centre_scale(to_coco17(clip))   # (64,17,2)
+        clip15 = centre_scale(to_pfpt15(clip))   # (64,15,2)
         idx = f"{vid}_{cam}_{start_global:05d}"
         np.savez_compressed(OUT/f"{idx}.npz",
-                            xyz=clip17.astype(np.float32),
+                            xyz=clip15.astype(np.float32),
                             label=label,
                             quality=qual)
         print("saving", OUT/f"{idx}.npz")
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         for f in (RAW/"2d_joints"/ex).glob("*-30fps.npy"):
             process_video(ex, f)
 
-    meta = dict(window=WIN, step=STEP, mapping="26→17 coco", fps=30)
+    meta = dict(window=WIN, step=STEP, mapping="26→15 pfpt", fps=30)
     (OUT.parent/"meta.json").write_text(json.dumps(meta, indent=2))
     print("✓ windows saved to", OUT)
     print("processed reps :", PROCESSED)
