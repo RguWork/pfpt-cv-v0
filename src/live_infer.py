@@ -99,33 +99,31 @@ while True:
 
     # ─── inference every STEP frames ─────────────────────────────────────
     if len(buffer) == WIN and frame_count % STEP == 0:
-        clip = centre_scale(np.stack(buffer))   # (64,17,2)
 
-        arr = torch.tensor(clip, dtype=torch.float32)         # (64,17,2)
-        feat_live = arr.view(1, WIN, -1)[0,0].cpu().numpy()   # first time‐step → length-34
+        clip = centre_scale(np.stack(buffer))   #(64,15,2)
+        arr = torch.tensor(clip, dtype=torch.float32) #(64,15,2)
+        feat_live = arr.view(1, WIN, -1)[0, 0].cpu().numpy() #first time‐step → length-30
 
         # load a ref window’s first frame for comparison
         ref = np.load("../data/processed_data/windows/PM_005_bg_c17_00000.npz")["xyz"]
         ref_feat = centre_scale(ref)[0].reshape(-1)
 
-        names = JOINT_NAMES_34 = [
-            "pelvis_x",    "pelvis_y",
-            "l_hip_x",     "l_hip_y",
-            "l_knee_x",    "l_knee_y",
-            "l_ankle_x",   "l_ankle_y",
-            "r_hip_x",     "r_hip_y",
-            "r_knee_x",    "r_knee_y",
-            "r_ankle_x",   "r_ankle_y",
-            "chest_x",     "chest_y",
-            "l_shoulder_x","l_shoulder_y",
-            "l_elbow_x",   "l_elbow_y",
-            "r_shoulder_x","r_shoulder_y",
-            "r_elbow_x",   "r_elbow_y",
-            "r_wrist_x",   "r_wrist_y",
-            "head_top_x",  "head_top_y",
+        names = JOINT_NAMES_30 = [
+            "pelvis_x", "pelvis_y",
             "mid_spine_x", "mid_spine_y",
-            "l_shoulder2_x","l_shoulder2_y",
-            "head2_x",     "head2_y",
+            "head_x", "head_y",
+            "l_shoulder_x", "l_shoulder_y",
+            "l_elbow_x", "l_elbow_y",
+            "l_wrist_x", "l_wrist_y",
+            "r_shoulder_x", "r_shoulder_y",
+            "r_elbow_x", "r_elbow_y",
+            "r_wrist_x", "r_wrist_y",
+            "l_hip_x", "l_hip_y",
+            "l_knee_x", "l_knee_y",
+            "l_ankle_x", "l_ankle_y",
+            "r_hip_x", "r_hip_y",
+            "r_knee_x", "r_knee_y",
+            "r_ankle_x", "r_ankle_y",
         ]
         for i,(n,v_live,v_ref) in enumerate(zip(names, feat_live, ref_feat)):
             print(f"{i:2d} {n:10s}  live={v_live:.3f}   ref={v_ref:.3f}")
@@ -133,7 +131,7 @@ while True:
         if np.isnan(clip).any():
             print("NaNs in clip - skipping inference")
         else:
-            # reshape → (1, 64, 34)
+            # reshape → (1, 64, 30)
             arr = torch.tensor(clip, dtype=torch.float32).to(device)
             inp = arr.view(1, WIN, -1)
 
@@ -146,17 +144,18 @@ while True:
             majority = max(set(vote_buf), key=vote_buf.count)
             last_pred = majority
 
-    # ─── draw the 17-joint overlay ───────────────────────────────────────
+    # ─── draw the 15-joint overlay ───────────────────────────────────────
     if kps is not None:
         H, W = frame.shape[:2]
         pts  = (kps * [W, H]).astype(int)
         for x, y in pts:
             cv2.circle(frame, (x, y), 4, (0, 0, 255), -1)
         LIMBS = [
-            (0,1),(1,2),(2,3),
-            (0,4),(4,5),(5,6),
-            (7,8),(8,9),
-            (7,10),(10,11),(11,12),
+            (0,1), (1,2),        # pelvis → mid_spine → head
+            (0,3), (3,4), (4,5), # L arm
+            (0,6), (6,7), (7,8), # R arm
+            (0,9), (9,10), (10,11), # L leg
+            (0,12), (12,13), (13,14), # R leg
         ]
         for i,j in LIMBS:
             cv2.line(frame, tuple(pts[i]), tuple(pts[j]), (0,128,0), 2)
