@@ -10,7 +10,7 @@ OUT  = Path("../data/processed_data/windows");  OUT.mkdir(parents=True, exist_ok
 WIN  = 64     #frames per window
 STEP = 32     #50 % overlap
 
-def window(arr, label, qual, vid, cam, base_idx):
+def window(arr, label, qual, vid, cam, base_idx, person_id):
     """
     save an npz file that is normalized and turned to pfpt15
     with batched frames, every 64 frames with 32 frame overlap
@@ -26,8 +26,10 @@ def window(arr, label, qual, vid, cam, base_idx):
         np.savez_compressed(OUT/f"{idx}.npz",
                             xyz=clip15.astype(np.float32),
                             label=label,
-                            quality=qual)
+                            quality=qual,
+                            person_id=person_id)
         print("saving", OUT/f"{idx}.npz")
+
 
 
 def process_video(ex_folder, fname):
@@ -39,8 +41,11 @@ def process_video(ex_folder, fname):
     arr = np.load(fname)                        # (T,26,2)
     seg = SEG[SEG.video_id == vid]
 
-    #mask to keep track of booleans of inside-rep framse
+    #mask to keep track of booleans of inside-rep frames
     mask = np.zeros(len(arr), bool)
+
+    #get person id
+    person_id = int(seg.person_id.iloc[0])
 
     for row in seg.itertuples():
         if row.exercise_id not in PFPT_IDS:     # skip non-PFPT
@@ -51,11 +56,11 @@ def process_video(ex_folder, fname):
 
         mask[row.first_frame:row.last_frame+1] = True
         rep = arr[row.first_frame:row.last_frame+1]
-        window(rep, row.exercise_id, row.correctness, vid, cam, row.first_frame)
+        window(rep, row.exercise_id, row.correctness, vid, cam, row.first_frame, person_id)
 
     #background windows
     bg_frames = arr[~mask] #make an array of all non-exercise frames
-    window(bg_frames, 0, -1, f"{vid}_bg", cam, 0)
+    window(bg_frames, 0, -1, f"{vid}_bg", cam, 0, person_id)
 
 if __name__ == "__main__":
     global SEG, PFPT_IDS
@@ -73,7 +78,7 @@ if __name__ == "__main__":
         for f in (RAW/"2d_joints"/ex).glob("*-30fps.npy"):
             process_video(ex, f)
 
-    meta = dict(window=WIN, step=STEP, mapping="26→15 pfpt", fps=30)
+    meta = dict(window=WIN, step=STEP, mapping="26 -> 15 PFPT", fps=30)
     (OUT.parent/"meta.json").write_text(json.dumps(meta, indent=2))
     print("✓ windows saved to", OUT)
     print("processed reps :", PROCESSED)
